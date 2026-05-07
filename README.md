@@ -10,6 +10,3 @@
 * 🕒 **Filtro Temporal:** Resultados estrictamente limitados a las últimas 24 horas.
 * 🚀 **Rápido y Ligero:** Diseñado para dar respuestas inmediatas.
 * 🛠️ **Fácil de Integrar:** (Menciona si es una CLI, una API o un script simple).
-
----
-
