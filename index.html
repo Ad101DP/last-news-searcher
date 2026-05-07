@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Noticias de Última Hora</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Animaciones personalizadas */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.4s ease-out forwards;
+        }
+        
+        /* Shimmer effect for loading */
+        .shimmer {
+            background: #f6f7f8;
+            background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 100%; 
+            animation-duration: 1.5s;
+            animation-fill-mode: forwards; 
+            animation-iteration-count: infinite;
+            animation-name: placeholderShimmer;
+            animation-timing-function: linear;
+        }
+        
+        @keyframes placeholderShimmer {
+            0% { background-position: -468px 0; }
+            100% { background-position: 468px 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+    <!-- Header / Nav -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+            <i data-lucide="newspaper" class="text-blue-600 w-8 h-8"></i>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Noticias<span class="text-blue-600">24h</span></h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-10">
+        
+        <!-- Search Section -->
+        <div class="max-w-2xl mx-auto text-center mb-12">
+            <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl mb-4">
+                ¿Qué está pasando ahora?
+            </h2>
+            <p class="text-lg text-gray-600 mb-8">
+                Introduce una palabra clave y descubre las noticias más relevantes de las últimas 24 horas.
+            </p>
+            
+            <div class="relative flex items-center w-full shadow-sm rounded-full bg-white border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 overflow-hidden transition-shadow">
+                <div class="pl-4 text-gray-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Ej: Inteligencia Artificial, Deportes, Economía..." 
+                    class="w-full py-4 px-4 text-gray-700 outline-none bg-transparent"
+                    autocomplete="off"
+                >
+                <button 
+                    id="searchBtn" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-8 transition-colors h-full flex items-center justify-center whitespace-nowrap"
+                >
+                    Buscar
+                </button>
+            </div>
+            
+            <!-- Error Message Container -->
+            <div id="errorMessage" class="hidden mt-4 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm text-left flex gap-3 items-start">
+                <i data-lucide="alert-circle" class="w-5 h-5 shrink-0 mt-0.5"></i>
+                <span id="errorText">Ha ocurrido un error.</span>
+            </div>
+        </div>
+
+        <!-- Loading State Container -->
+        <div id="loadingState" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Skeleton Cards -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-64">
+                <div class="h-48 shimmer w-full"></div>
+                <div class="p-5 space-y-3">
+                    <div class="h-4 shimmer rounded w-3/4"></div>
+                    <div class="h-4 shimmer rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-64 hidden md:block">
+                <div class="h-48 shimmer w-full"></div>
+                <div class="p-5 space-y-3">
+                    <div class="h-4 shimmer rounded w-3/4"></div>
+                    <div class="h-4 shimmer rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-64 hidden lg:block">
+                <div class="h-48 shimmer w-full"></div>
+                <div class="p-5 space-y-3">
+                    <div class="h-4 shimmer rounded w-3/4"></div>
+                    <div class="h-4 shimmer rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div>
+            <h3 id="resultsTitle" class="text-xl font-semibold text-gray-800 mb-6 hidden">
+                Resultados para: <span id="keywordDisplay" class="text-blue-600"></span>
+            </h3>
+            
+            <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards will be injected here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-16">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 text-gray-400">
+                    <i data-lucide="inbox" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900">No hay noticias recientes</h3>
+                <p class="text-gray-500 mt-2 max-w-md mx-auto">No hemos encontrado resultados en las últimas 24 horas para esa palabra clave. Intenta con un término diferente.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-20 border-t border-gray-200 bg-white py-8">
+        <div class="max-w-5xl mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>Buscador de Noticias impulsado por Inteligencia Artificial y Búsqueda web en tiempo real.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Inicializar iconos de Lucide
+        lucide.createIcons();
+
+        // API Key suministrada por el entorno
+        const apiKey = "";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // Referencias a elementos del DOM
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const resultsTitle = document.getElementById('resultsTitle');
+        const keywordDisplay = document.getElementById('keywordDisplay');
+
+        // Función con retroceso exponencial (Exponential Backoff)
+        async function fetchWithRetry(url, options) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < delays.length + 1; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    if (i === delays.length) throw error; // Falla después de todos los reintentos
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+
+        // Función principal de búsqueda
+        async function performSearch() {
+            const keyword = searchInput.value.trim();
+            if (!keyword) return;
+
+            // Actualizar UI para estado de carga
+            searchInput.blur();
+            errorMessage.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            resultsGrid.innerHTML = '';
+            resultsTitle.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+            lucide.createIcons();
+
+            // Configurar el payload para usar la IA y Google Search con formato JSON
+            const payload = {
+                contents: [{
+                    parts: [{
+                        text: `Busca las noticias más importantes y relevantes publicadas de forma estricta en las ÚLTIMAS 24 HORAS sobre: "${keyword}". 
+                        Usa tu herramienta de búsqueda de Google.
+                        Extrae el título, un resumen de unas 2 líneas, la fuente (el medio), la URL y la hora o fecha de publicación.
+                        Si no hay noticias recientes sobre esto, devuelve un arreglo vacío en 'articles'.`
+                    }]
+                }],
+                tools: [{ google_search: {} }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            articles: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        title: { type: "STRING" },
+                                        summary: { type: "STRING" },
+                                        url: { type: "STRING" },
+                                        source: { type: "STRING" },
+                                        date: { type: "STRING" }
+                                    },
+                                    required: ["title", "summary", "url", "source", "date"]
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            try {
+                const data = await fetchWithRetry(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // Extraer y procesar texto del resultado
+                const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) {
+                    throw new Error("Respuesta inválida del servidor");
+                }
+
+                const resultData = JSON.parse(jsonText);
+                const articles = resultData.articles || [];
+
+                displayResults(articles, keyword);
+
+            } catch (error) {
+                console.error("Error al buscar noticias:", error);
+                errorText.textContent = "Hubo un problema al buscar las noticias. Por favor, revisa tu conexión e inténtalo de nuevo en unos momentos.";
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // Restaurar UI post-carga
+                loadingState.classList.add('hidden');
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Buscar';
+            }
+        }
+
+        // Función para renderizar las tarjetas de noticias
+        function displayResults(articles, keyword) {
+            keywordDisplay.textContent = keyword;
+            resultsTitle.classList.remove('hidden');
+
+            if (articles.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            articles.forEach((article, index) => {
+                // Añadir un retardo escalonado en la animación para cada tarjeta
+                const animationDelay = index * 0.1;
+                
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full animate-fade-in`;
+                card.style.animationDelay = `${animationDelay}s`;
+                card.style.opacity = '0'; // Se hace visible con la animación
+                
+                // Formatear si URL existe
+                const hasUrl = article.url && article.url.trim() !== '' && article.url !== '#';
+                
+                card.innerHTML = `
+                    <div class="p-6 flex flex-col flex-grow">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                ${article.source || 'Fuente desconocida'}
+                            </span>
+                            <span class="text-xs text-gray-500 flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                ${article.date || 'Reciente'}
+                            </span>
+                        </div>
+                        <h4 class="text-lg font-bold text-gray-900 mb-2 line-clamp-3 leading-snug">
+                            ${article.title}
+                        </h4>
+                        <p class="text-sm text-gray-600 flex-grow line-clamp-4 mb-4">
+                            ${article.summary}
+                        </p>
+                        ${hasUrl ? `
+                        <div class="mt-auto pt-4 border-t border-gray-100">
+                            <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                                Leer noticia completa
+                                <i data-lucide="external-link" class="w-4 h-4 ml-1"></i>
+                            </a>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                resultsGrid.appendChild(card);
+            });
+            
+            lucide.createIcons();
+        }
+
+        // Event Listeners
+        searchBtn.addEventListener('click', performSearch);
+        
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+    </script>
+</body>
+</html>
